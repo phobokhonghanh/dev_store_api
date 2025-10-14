@@ -26,11 +26,6 @@ spring:
   docker:
     compose:
       enabled: false
-
-jwt:
-  expiration: ${JWT_EXPIRATION:900000} # 15 minutes
-  refresh-expiration: ${JWT_REFRESH_EXPIRATION:1209600000} # 14 days
-  secret-key: ${JWT_SECRET_KEY:QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODkNCg==}
 server:
   port: ${SERVER_PORT:8080}
 

@@ -1,35 +1,105 @@
-HELP.md
+########################################
+### Java & Spring Boot Project Ignore ###
+########################################
+
+# --- Java build outputs ---
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# --- Log files ---
+*.log
+
+# --- Misc Java Tools ---
+*.ctxt
+.mtj.tmp/
+
+# --- VM crash logs ---
+hs_err_pid*
+
+########################################
+### Build Tools ###
+########################################
+
+# --- Maven ---
 target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# --- Gradle ---
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+out/
 
-### IntelliJ IDEA ###
-.idea
+########################################
+### IDEs ###
+########################################
+
+# --- IntelliJ IDEA ---
+.idea/
 *.iws
 *.iml
 *.ipr
-.mvn
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
+# --- VS Code ---
 .vscode/
 
+# --- Eclipse ---
+.project
+.classpath
+.settings/
+bin/
+tmp/
+
+# --- NetBeans ---
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+########################################
+### Spring Boot Specific ###
+########################################
+
+# --- Embedded Databases ---
+*.db
+*.h2.db
+*.mv.db
+*.trace.db
+
+# --- Environment / Config Files ---
+application-*.yml
+application-*.yaml
+application-*.properties
+.env
+.env.*
+
+########################################
+### Frontend (if exists) ###
+########################################
+node_modules/
+dist/
+build/
+
+########################################
+### OS Generated Files ###
+########################################
+.DS_Store
+Thumbs.db

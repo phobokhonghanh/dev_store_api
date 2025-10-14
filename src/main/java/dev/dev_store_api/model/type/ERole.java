@@ -1,5 +1,8 @@
 package dev.dev_store_api.model.type;
 
+import lombok.Getter;
+
+@Getter
 public enum ERole {
     USER(1),
     ADMIN(0);
@@ -10,7 +13,4 @@ public enum ERole {
         this.value = value;
     }
 
-    public int getValue() {
-        return value;
-    }
 }

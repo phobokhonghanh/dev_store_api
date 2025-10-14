@@ -1,5 +1,8 @@
 package dev.dev_store_api.model;
+
 import java.time.LocalDateTime;
+
+import dev.dev_store_api.model.type.EProvider;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,7 +28,7 @@ public class Account {
     @Column(length = 10)
     private String otpCode;
 
-    @Column(nullable = false, columnDefinition = "INTEGER DEFAULT 1")
+    @Column(nullable = false, columnDefinition = "INTEGER DEFAULT 0")
     private Integer status;
 
     @Column(nullable = false, unique = true, length = 100)
@@ -37,9 +40,12 @@ public class Account {
     @Column(columnDefinition = "TEXT")
     private String avatar;
 
-    @ManyToOne
-    @JoinColumn(name = "third_party_id", foreignKey = @ForeignKey(name = "fk_account_third_party"))
-    private ThirdParty thirdParty;
+    @Column(nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    private EProvider authProvider;
+
+    @Column(length = 255)
+    private String authProviderId;
 
     @Column(nullable = false, insertable = false, updatable = false)
     private LocalDateTime createdAt;

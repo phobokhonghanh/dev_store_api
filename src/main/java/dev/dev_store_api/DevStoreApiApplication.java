@@ -1,6 +1,5 @@
 package dev.dev_store_api;
 
-import dev.dev_store_api.config.LoadConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -8,7 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DevStoreApiApplication {
 
     public static void main(String[] args) {
-        new LoadConfig().loadPrivateConfig();
         SpringApplication.run(DevStoreApiApplication.class, args);
     }
 
