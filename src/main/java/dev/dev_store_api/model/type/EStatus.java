@@ -1,16 +1,17 @@
 package dev.dev_store_api.model.type;
 
-public enum EAccount {
+import lombok.Getter;
+
+@Getter
+public enum EStatus {
+    BLOCK(2),
     ACTIVE(1),
     UNACTIVE(0);
 
     private final int value;
 
-    EAccount(int value) {
+    EStatus(int value) {
         this.value = value;
     }
 
-    public int getValue() {
-        return value;
-    }
 }

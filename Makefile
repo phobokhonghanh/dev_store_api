@@ -8,7 +8,7 @@ build-docker:
 
 # Chạy container MySQL
 deploy-docker:
-	@docker-compose --profile database up -d
+	@docker compose --env-file ./dev.env --profile database up -d
 
 # Dừng container
 stop-docker:
@@ -16,7 +16,7 @@ stop-docker:
 
 # Xóa container và volume
 clean-docker:
-	@docker-compose --profile database down -v
+	@docker compose --env-file ./dev.env --profile database down -v
 
 # Xem logs của MySQL
 logs-mysql:
