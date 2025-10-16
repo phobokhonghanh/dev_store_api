@@ -164,7 +164,7 @@ public class AccountService {
         return "LOGOUT_SUCCESSFUL";
     }
 
-    public LoginResponse refresh(String refreshToken) {
+    public LoginResponse refreshToken(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new BadRequestException("Refresh token is required.");
         }
