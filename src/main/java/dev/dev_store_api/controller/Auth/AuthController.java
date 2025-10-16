@@ -54,13 +54,14 @@ public class AuthController {
     }
 
     @PostMapping(value="/logout", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> logout(@RequestHeader("Authorization") String token) {
-        String message = accountService.logout(token);
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String refreshToken) {
+        String message = accountService.logout(refreshToken);
         return ResponseEntity.ok(message);
     }
-    @PostMapping(value="/refresh", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> refresh(@RequestHeader("Authorization") String token) {
-        LoginResponse loginResponse =  accountService.refresh(token);
+
+    @PostMapping(value="/refresh/token", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> refresh(@RequestHeader("Authorization") String refreshToken) {
+        LoginResponse loginResponse =  accountService.refreshToken(refreshToken);
         return ResponseEntity.ok(loginResponse);
     }
 }
