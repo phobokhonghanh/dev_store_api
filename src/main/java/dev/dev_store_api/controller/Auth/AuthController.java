@@ -1,9 +1,12 @@
 package dev.dev_store_api.controller.Auth;
 
+import dev.dev_store_api.factory.ResponseFactory;
 import dev.dev_store_api.model.dto.AccountDTO;
-import dev.dev_store_api.model.dto.response.AccountResponse;
 import dev.dev_store_api.model.dto.request.LoginRequest;
+import dev.dev_store_api.model.dto.response.AccountResponse;
+import dev.dev_store_api.model.dto.response.BaseResponse;
 import dev.dev_store_api.model.dto.response.LoginResponse;
+import dev.dev_store_api.model.type.EMessage;
 import dev.dev_store_api.model.type.EProvider;
 import dev.dev_store_api.model.type.ERole;
 import dev.dev_store_api.service.AccountService;
@@ -25,43 +28,44 @@ public class AuthController {
     }
 
     @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AccountResponse> register(@Valid @RequestBody AccountDTO accountDTO) {
-        AccountResponse createdAccount = accountService.createAccount(accountDTO, ERole.USER.name(), EProvider.SYSTEM);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdAccount);
+    public ResponseEntity<BaseResponse<AccountResponse>> register(@Valid @RequestBody AccountDTO accountDTO) {
+        AccountResponse result = accountService.createAccount(accountDTO, ERole.USER.name(), EProvider.SYSTEM);
+        return ResponseFactory.success(result, EMessage.CREATED, HttpStatus.CREATED);
     }
+
     @PostMapping(value = "/register-admin", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AccountResponse> registerAdmin(@Valid @RequestBody AccountDTO accountDTO) {
-        AccountResponse createdAccount = accountService.createAccount(accountDTO, ERole.ADMIN.name(), EProvider.SYSTEM);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdAccount);
+    public ResponseEntity<BaseResponse<AccountResponse>> registerAdmin(@Valid @RequestBody AccountDTO accountDTO) {
+        AccountResponse result = accountService.createAccount(accountDTO, ERole.ADMIN.name(), EProvider.SYSTEM);
+        return ResponseFactory.success(result, EMessage.CREATED, HttpStatus.CREATED);
     }
 
     @GetMapping(value = "/register/verify", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> verifyOtp(@RequestParam String username, @RequestParam String otp) {
+    public ResponseEntity<BaseResponse<Void>> verifyOtp(@RequestParam String username, @RequestParam String otp) {
         accountService.verifyOtp(username, otp);
-        return ResponseEntity.ok("SUCCESS");
+        return ResponseFactory.success(null, EMessage.SUCCESS, HttpStatus.OK);
     }
 
     @GetMapping(value = "/refresh/otp", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> refreshOtp(@RequestParam String username) {
+    public ResponseEntity<BaseResponse<Void>> refreshOtp(@RequestParam String username) {
         accountService.refreshOtp(username);
-        return ResponseEntity.ok("SUCCESS");
+        return ResponseFactory.success(null, EMessage.SUCCESS, HttpStatus.OK);
     }
 
     @PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request) {
-        LoginResponse loginResponse = accountService.validateUser(loginRequest, request);
-        return ResponseEntity.ok(loginResponse);
+    public ResponseEntity<BaseResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request) {
+        LoginResponse result = accountService.validateUser(loginRequest, request);
+        return ResponseFactory.success(result, EMessage.SUCCESS, HttpStatus.OK);
     }
 
-    @PostMapping(value="/logout", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> logout(@RequestHeader("Authorization") String refreshToken) {
-        String message = accountService.logout(refreshToken);
-        return ResponseEntity.ok(message);
+    @PostMapping(value = "/logout", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseResponse<Void>> logout(@RequestHeader("Authorization") String refreshToken) {
+        accountService.logout(refreshToken);
+        return ResponseFactory.success(null, EMessage.SUCCESS, HttpStatus.OK);
     }
 
-    @PostMapping(value="/refresh/token", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> refresh(@RequestHeader("Authorization") String refreshToken) {
-        LoginResponse loginResponse =  accountService.refreshToken(refreshToken);
-        return ResponseEntity.ok(loginResponse);
+    @PostMapping(value = "/refresh/token", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseResponse<LoginResponse>> refresh(@RequestHeader("Authorization") String refreshToken) {
+        LoginResponse result = accountService.refreshToken(refreshToken);
+        return ResponseFactory.success(result, EMessage.SUCCESS, HttpStatus.OK);
     }
 }
