@@ -9,8 +9,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/")
 public class AppController {
-    public AppController(AccountService accountService){
+    public AppController(AccountService accountService) {
     }
+
     @GetMapping("")
     public ResponseEntity<?> app() {
         return ResponseEntity.ok("Hello World");

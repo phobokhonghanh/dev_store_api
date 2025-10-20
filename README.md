@@ -1,7 +1,7 @@
-Thêm factory cho response entity
-Update info response (theo format chung có timestamp,...)
+Thêm factory cho response entity => done
+Update info response (theo format chung có timestamp,...) => done
 
-Thêm messages enum
+Thêm messages enum => done (chưa update format String...)
 Thêm interface cho services
 Thêm email
 Thêm agent

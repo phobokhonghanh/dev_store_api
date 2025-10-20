@@ -1,48 +1,39 @@
 package dev.dev_store_api.libs.utils.exception;
 
-import dev.dev_store_api.model.dto.response.ErrorResponse;
+import dev.dev_store_api.factory.ResponseFactory;
+import dev.dev_store_api.model.dto.response.BaseResponse;
+import dev.dev_store_api.model.type.EMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
-
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BaseException.class)
-    public ResponseEntity<ErrorResponse> handleBaseException(BaseException ex) {
-        ErrorResponse response = ErrorResponse.builder()
-                .status(ex.getStatus().value())
-                .error(ex.getStatus().getReasonPhrase())
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
-        return new ResponseEntity<>(response, ex.getStatus());
+    public ResponseEntity<BaseResponse<Void>> handleException(BaseException ex) {
+        return ResponseFactory.error(ex.getMessage(), ex.getStatus());
     }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
-        BaseException badEx = new BadRequestException("Invalid or missing fields in request body");
-
-        ErrorResponse response = ErrorResponse.builder()
-                .status(badEx.getStatus().value())
-                .error(badEx.getStatus().getReasonPhrase())
-                .message(badEx.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        return new ResponseEntity<>(response, badEx.getStatus());
+    public ResponseEntity<BaseResponse<Void>> handleValidationException(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .findFirst()
+                .orElse(String.valueOf(EMessage.VALIDATION_ERROR));
+        BaseException exception = new BadRequestException(message);
+        return ResponseFactory.error(exception.getMessage(), exception.getStatus());
     }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
-        ErrorResponse response = ErrorResponse.builder()
-                .status(500)
-                .error("Internal Server Error")
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
-        return ResponseEntity.internalServerError().body(response);
+    public ResponseEntity<BaseResponse<Void>> handleUnknownException(Exception ex) {
+        log.error("Internal Server Error: ", ex);
+        return ResponseFactory.error(EMessage.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
