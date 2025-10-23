@@ -28,14 +28,14 @@ public class AuthController {
     }
 
     @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseResponse<AccountResponse>> register(@Valid @RequestBody AccountDTO accountDTO) {
-        AccountResponse result = accountService.createAccount(accountDTO, ERole.USER.name(), EProvider.SYSTEM);
+    public ResponseEntity<BaseResponse<AccountResponse>> registerUser(@Valid @RequestBody AccountDTO dto) {
+        AccountResponse result = accountService.registerUser(dto);
         return ResponseFactory.success(result, EMessage.CREATED, HttpStatus.CREATED);
     }
 
     @PostMapping(value = "/register-admin", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<AccountResponse>> registerAdmin(@Valid @RequestBody AccountDTO accountDTO) {
-        AccountResponse result = accountService.createAccount(accountDTO, ERole.ADMIN.name(), EProvider.SYSTEM);
+        AccountResponse result = accountService.registerAdmin(accountDTO);
         return ResponseFactory.success(result, EMessage.CREATED, HttpStatus.CREATED);
     }
 

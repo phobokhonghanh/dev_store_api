@@ -1,5 +1,6 @@
 package dev.dev_store_api.service;
 
+import dev.dev_store_api.factory.AuthFactory;
 import dev.dev_store_api.libs.utils.GenericMapper;
 import dev.dev_store_api.libs.utils.exception.AlreadyExistsException;
 import dev.dev_store_api.libs.utils.exception.AuthException;
@@ -14,6 +15,7 @@ import dev.dev_store_api.model.dto.request.UpdateRequest;
 import dev.dev_store_api.model.dto.response.AccountResponse;
 import dev.dev_store_api.model.dto.response.LoginResponse;
 import dev.dev_store_api.model.type.EProvider;
+import dev.dev_store_api.model.type.ERole;
 import dev.dev_store_api.model.type.EStatus;
 import dev.dev_store_api.repository.AccountRelationRepository;
 import dev.dev_store_api.repository.AccountRepository;
@@ -46,25 +48,25 @@ public class AccountService {
     private final JwtService jwtService;
     private final MultiAgentRepository multiAgentRepository;
     private static final SecureRandom random = new SecureRandom();
+    private final AuthFactory authFactory;
 
     public AccountService(AccountRepository accountRepository,
                           AccountRelationRepository relationRepository,
                           GenericMapper genericMapper,
-                          AccountRoleService accountRoleService, JwtService jwtService, MultiAgentRepository multiAgentRepository) {
+                          AccountRoleService accountRoleService, JwtService jwtService, MultiAgentRepository multiAgentRepository, AuthFactory authFactory) {
         this.accountRepository = accountRepository;
         this.relationRepository = relationRepository;
         this.genericMapper = genericMapper;
         this.accountRoleService = accountRoleService;
         this.jwtService = jwtService;
         this.multiAgentRepository = multiAgentRepository;
+        this.authFactory = authFactory;
     }
 
     public Account findAccountByIdentifier(String identifier) {
         return Stream.<Supplier<Optional<Account>>>of(
                         () -> accountRepository.findByUsername(identifier),
                         () -> accountRepository.findByEmail(identifier)
-                        // () -> accountRepository.findByPhone(identifier),
-                        // () -> accountRepository.findBySsoId(identifier)
                 )
                 .map(Supplier::get)
                 .filter(Optional::isPresent)
@@ -72,26 +74,53 @@ public class AccountService {
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("User not found or inactive!"));
     }
+    @Transactional
+    public AccountResponse registerUser(AccountDTO dto) {
+        return createAccount(dto, ERole.USER, EProvider.SYSTEM);
+    }
 
     @Transactional
-    public AccountResponse createAccount(AccountDTO accountDTO, String role, EProvider provider) {
-        try {
-            checkUsernameExists(accountDTO.getUsername());
-            checkEmailExists(accountDTO.getEmail());
-            Account account = genericMapper.toEntity(accountDTO, Account.class);
-            account.setPassword(hashPassword(accountDTO.getPassword()));
-            account.setStatus(EStatus.UNACTIVE.getValue());
-            account.setAuthProvider(provider);
-            String token = generateOtp();
-            account.setOtpCode(token);
-            account = accountRepository.save(account);
-            accountRoleService.create(account, role);
-
-            return genericMapper.toDTO(account, AccountResponse.class);
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid account data provided.");
-        }
+    public AccountResponse registerAdmin(AccountDTO dto) {
+        return createAccount(dto, ERole.ADMIN, EProvider.SYSTEM);
     }
+
+    @Transactional
+    public AccountResponse registerWithFacebook(AccountDTO dto) {
+        return createAccount(dto, ERole.USER, EProvider.FACEBOOK);
+    }
+
+    @Transactional
+    public AccountResponse registerWithGoogle(AccountDTO dto) {
+        return createAccount(dto, ERole.USER, EProvider.GOOGLE);
+    }
+
+    private AccountResponse createAccount(AccountDTO dto, ERole role, EProvider provider) {
+        checkUsernameExists(dto.getUsername());
+        checkEmailExists(dto.getEmail());
+        Account account = authFactory.createAccount(dto, provider);
+        account = accountRepository.save(account);
+        accountRoleService.create(account, role);
+        return genericMapper.toDTO(account, AccountResponse.class);
+    }
+//    @Transactional
+//    public AccountResponse createAccount(AccountDTO accountDTO, String role, EProvider provider) {
+//        try {
+//            checkUsernameExists(accountDTO.getUsername());
+//            checkEmailExists(accountDTO.getEmail());
+//            Account account = genericMapper.toEntity(accountDTO, Account.class);
+//            account.setPassword(hashPassword(accountDTO.getPassword()));
+//            account.setStatus(EStatus.UNACTIVE.getValue());
+//            account.setAuthProvider(provider);
+//            String token = generateOtp();
+//            account.setOtpCode(token);
+//            account = accountRepository.save(account);
+//            accountRoleService.create(account, role);
+//
+//            return genericMapper.toDTO(account, AccountResponse.class);
+//        } catch (IllegalArgumentException e) {
+//            throw new BadRequestException("Invalid account data provided.");
+//        }
+//    }
     public void verifyOtp(String username, String otp){
         Account account = findAccountByIdentifier(username);
             if(!otp.equals(account.getOtpCode())){
