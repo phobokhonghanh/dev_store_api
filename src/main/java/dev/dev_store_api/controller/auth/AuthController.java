@@ -1,4 +1,4 @@
-package dev.dev_store_api.controller.Auth;
+package dev.dev_store_api.controller.auth;
 
 import dev.dev_store_api.factory.ResponseFactory;
 import dev.dev_store_api.model.dto.AccountDTO;
@@ -7,8 +7,6 @@ import dev.dev_store_api.model.dto.response.AccountResponse;
 import dev.dev_store_api.model.dto.response.BaseResponse;
 import dev.dev_store_api.model.dto.response.LoginResponse;
 import dev.dev_store_api.model.type.EMessage;
-import dev.dev_store_api.model.type.EProvider;
-import dev.dev_store_api.model.type.ERole;
 import dev.dev_store_api.service.AccountService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

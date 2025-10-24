@@ -1,5 +1,6 @@
 package dev.dev_store_api.service;
 
+import dev.dev_store_api.event.AccountCreatedEvent;
 import dev.dev_store_api.factory.AuthFactory;
 import dev.dev_store_api.libs.utils.GenericMapper;
 import dev.dev_store_api.libs.utils.exception.AlreadyExistsException;
@@ -26,6 +27,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -49,11 +51,12 @@ public class AccountService {
     private final MultiAgentRepository multiAgentRepository;
     private static final SecureRandom random = new SecureRandom();
     private final AuthFactory authFactory;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AccountService(AccountRepository accountRepository,
                           AccountRelationRepository relationRepository,
                           GenericMapper genericMapper,
-                          AccountRoleService accountRoleService, JwtService jwtService, MultiAgentRepository multiAgentRepository, AuthFactory authFactory) {
+                          AccountRoleService accountRoleService, JwtService jwtService, MultiAgentRepository multiAgentRepository, AuthFactory authFactory, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.relationRepository = relationRepository;
         this.genericMapper = genericMapper;
@@ -61,6 +64,7 @@ public class AccountService {
         this.jwtService = jwtService;
         this.multiAgentRepository = multiAgentRepository;
         this.authFactory = authFactory;
+        this.eventPublisher = eventPublisher;
     }
 
     public Account findAccountByIdentifier(String identifier) {
@@ -100,6 +104,9 @@ public class AccountService {
         Account account = authFactory.createAccount(dto, provider);
         account = accountRepository.save(account);
         accountRoleService.create(account, role);
+        if (provider == EProvider.SYSTEM) {
+            eventPublisher.publishEvent(new AccountCreatedEvent(account));
+        }
         return genericMapper.toDTO(account, AccountResponse.class);
     }
 //    @Transactional
