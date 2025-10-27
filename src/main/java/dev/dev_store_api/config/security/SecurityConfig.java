@@ -37,8 +37,9 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/auth/login",
                                 "/auth/register/**",
-                                "/auth/refresh/**",
-                                "auth/verify"
+                                "/auth/otp/verify",
+                                "/auth/otp/refresh",
+                                "/auth/token/refresh"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

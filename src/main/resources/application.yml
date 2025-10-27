@@ -1,3 +1,37 @@
+server:
+  ip: ${SERVER_IP:192.168.1.222}
+  port: ${SERVER_PORT:8080}
+  port_db: ${SERVER_PORT_DB:3306}
+
+app:
+  api:
+    version: v1
+    domain: http://${server.ip}:${server.port}
+    url: ${app.api.domain}/api/${app.api.version}
+
+  docker:
+    compose:
+      enabled: false
+
+  docs:
+    swagger:
+      openapi:
+        server:
+          url: "${app.domain}"
+          description: "Development environment"
+        info:
+          title: "Tutorial Management API"
+          version: "1.0"
+          description: "This API exposes endpoints to manage tutorials."
+          terms-of-service: "localhost"
+          contact:
+            name: "ndinhnguyen"
+            email: "ndinhnguyen.work@gmail.com"
+            url: "dev"
+          license:
+            name: "MIT License"
+            url: "https://choosealicense.com/licenses/mit/"
+
 spring:
   application:
     name: dev-store-api
@@ -6,7 +40,7 @@ spring:
     active: dev
 
   datasource:
-    url: ${MYSQL_URL:jdbc:mysql://192.168.1.14:3306/dev_login}
+    url: ${MYSQL_URL:jdbc:mysql://${server.ip}:${server.port_db}/dev_login}
     username: ${MYSQL_USER:admin}
     password: ${MYSQL_PASSWORD:admin}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -23,41 +57,19 @@ spring:
     serialization:
       INDENT_OUTPUT: true
 
-  docker:
-    compose:
-      enabled: false
+  jwt:
+    expiration: ${JWT_EXPIRATION:900000} # 15 minutes
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:1209600000} # 14 days
+    secret-key: ${JWT_SECRET_KEY:QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODkNCg==}
+
   mail:
     host: smtp.gmail.com
     port: 587
-    username: your_email@gmail.com
-    password: your_app_password
+    username: "20130340@st.hcmuaf.edu.vn"
+    password: "wfmberytumzjyqiv"
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
-jwt:
-  expiration: ${JWT_EXPIRATION:900000} # 15 minutes
-  refresh-expiration: ${JWT_REFRESH_EXPIRATION:1209600000} # 14 days
-  secret-key: ${JWT_SECRET_KEY:QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODkNCg==}
-server:
-  port: ${SERVER_PORT:8080}
-
-swagger:
-  openapi:
-    server:
-      url: "http://192.168.1.14:${server.port}"
-      description: "Development environment"
-    info:
-      title: "Tutorial Management API"
-      version: "1.0"
-      description: "This API exposes endpoints to manage tutorials."
-      terms-of-service: "localhost"
-      contact:
-        name: "ndinhnguyen"
-        email: "ndinhnguyen.work@gmail.com"
-        url: "dev"
-      license:
-        name: "MIT License"
-        url: "https://choosealicense.com/licenses/mit/"

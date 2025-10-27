@@ -33,10 +33,6 @@ public class SystemAuthCreator implements AuthCreator {
         return account;
     }
 
-    private void sendEmailAfterCreate(Account account) {
-        // mặc định: không làm gì, sub-class có thể override
-    }
-
     private String hashPassword(String rawPassword) {
         return BCrypt.hashpw(rawPassword, BCrypt.gensalt());
     }

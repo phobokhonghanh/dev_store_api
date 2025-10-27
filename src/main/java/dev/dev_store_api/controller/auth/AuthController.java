@@ -28,42 +28,42 @@ public class AuthController {
     @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<AccountResponse>> registerUser(@Valid @RequestBody AccountDTO dto) {
         AccountResponse result = accountService.registerUser(dto);
-        return ResponseFactory.success(result, EMessage.CREATED, HttpStatus.CREATED);
+        return ResponseFactory.success(result, EMessage.CREATED.getMessage(), HttpStatus.CREATED);
     }
 
     @PostMapping(value = "/register-admin", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<AccountResponse>> registerAdmin(@Valid @RequestBody AccountDTO accountDTO) {
         AccountResponse result = accountService.registerAdmin(accountDTO);
-        return ResponseFactory.success(result, EMessage.CREATED, HttpStatus.CREATED);
+        return ResponseFactory.success(result, EMessage.CREATED.getMessage(), HttpStatus.CREATED);
     }
 
-    @GetMapping(value = "/register/verify", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseResponse<Void>> verifyOtp(@RequestParam String username, @RequestParam String otp) {
-        accountService.verifyOtp(username, otp);
-        return ResponseFactory.success(null, EMessage.SUCCESS, HttpStatus.OK);
+    @GetMapping(value = "/otp/verify/{username}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseResponse<Void>> verifyOtp(@PathVariable String username, @RequestParam String token) {
+        accountService.verifyOtp(username, token);
+        return ResponseFactory.success(null, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
-    @GetMapping(value = "/refresh/otp", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/otp/refresh", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<Void>> refreshOtp(@RequestParam String username) {
         accountService.refreshOtp(username);
-        return ResponseFactory.success(null, EMessage.SUCCESS, HttpStatus.OK);
+        return ResponseFactory.success(null, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
     @PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request) {
         LoginResponse result = accountService.validateUser(loginRequest, request);
-        return ResponseFactory.success(result, EMessage.SUCCESS, HttpStatus.OK);
+        return ResponseFactory.success(result, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
     @PostMapping(value = "/logout", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<Void>> logout(@RequestHeader("Authorization") String refreshToken) {
         accountService.logout(refreshToken);
-        return ResponseFactory.success(null, EMessage.SUCCESS, HttpStatus.OK);
+        return ResponseFactory.success(null, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
-    @PostMapping(value = "/refresh/token", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/token/refresh", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<LoginResponse>> refresh(@RequestHeader("Authorization") String refreshToken) {
         LoginResponse result = accountService.refreshToken(refreshToken);
-        return ResponseFactory.success(result, EMessage.SUCCESS, HttpStatus.OK);
+        return ResponseFactory.success(result, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 }

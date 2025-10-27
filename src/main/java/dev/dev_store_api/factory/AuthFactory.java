@@ -15,10 +15,6 @@ public class AuthFactory {
 
     private final List<AuthCreator> creators;
 
-    public AuthFactory(List<AuthCreator> creators) {
-        this.creators = creators;
-    }
-
     public Account createAccount(AccountDTO dto, EProvider provider) {
         return creators.stream()
                 .filter(c -> c.supports(provider))

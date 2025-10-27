@@ -10,6 +10,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Locale;
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -26,7 +28,7 @@ public class GlobalExceptionHandler {
                 .stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .findFirst()
-                .orElse(String.valueOf(EMessage.VALIDATION_ERROR));
+                .orElse(EMessage.VALIDATION_ERROR.getMessage());
         BaseException exception = new BadRequestException(message);
         return ResponseFactory.error(exception.getMessage(), exception.getStatus());
     }
@@ -34,6 +36,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<BaseResponse<Void>> handleUnknownException(Exception ex) {
         log.error("Internal Server Error: ", ex);
-        return ResponseFactory.error(EMessage.INTERNAL_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+        return ResponseFactory.error(EMessage.INTERNAL_ERROR.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
