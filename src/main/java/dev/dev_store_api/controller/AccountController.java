@@ -28,7 +28,7 @@ public class AccountController {
     @GetMapping("/info")
     public ResponseEntity<BaseResponse<AccountResponse>> information(@RequestParam String username) {
         AccountResponse result = accountService.getAccount(username);
-        return ResponseFactory.success(result, EMessage.SUCCESS, HttpStatus.OK);
+        return ResponseFactory.success(result, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
     // Cập nhật thông tin cá nhân (email, tên, số điện thoại, ...)
@@ -38,7 +38,7 @@ public class AccountController {
             @Valid @RequestBody UpdateRequest accountDTO
     ) {
         AccountResponse result = accountService.updateAccount(username, accountDTO);
-        return ResponseFactory.success(result, EMessage.UPDATED, HttpStatus.OK);
+        return ResponseFactory.success(result, EMessage.UPDATED.getMessage(), HttpStatus.OK);
     }
 
     // Đổi mật khẩu
@@ -49,14 +49,14 @@ public class AccountController {
             @RequestParam String newPassword
     ) {
         accountService.changePassword(username, oldPassword, newPassword);
-        return ResponseFactory.success(null, EMessage.UPDATED, HttpStatus.OK);
+        return ResponseFactory.success(null, EMessage.UPDATED.getMessage(), HttpStatus.OK);
     }
 
     // Xóa account
     @DeleteMapping("/delete")
     public ResponseEntity<BaseResponse<Void>> deleteAccount(@RequestParam String username) {
         accountService.deleteAccount(username);
-        return ResponseFactory.success(null, EMessage.DELETED, HttpStatus.OK);
+        return ResponseFactory.success(null, EMessage.DELETED.getMessage(), HttpStatus.OK);
     }
 
     // Lấy danh sách tất cả sub account
@@ -68,7 +68,7 @@ public class AccountController {
     ) {
         Pageable pageable = PageRequest.of(page, size);
         Page<AccountResponse> result = accountService.getAllRelationAccounts(username, pageable);
-        return ResponseFactory.success(result, EMessage.SUCCESS, HttpStatus.OK);
+        return ResponseFactory.success(result, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
 }

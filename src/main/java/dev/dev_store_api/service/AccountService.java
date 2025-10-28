@@ -1,5 +1,6 @@
 package dev.dev_store_api.service;
 
+import dev.dev_store_api.event.account.AccountCreatedEvent;
 import dev.dev_store_api.factory.AuthFactory;
 import dev.dev_store_api.libs.utils.GenericMapper;
 import dev.dev_store_api.libs.utils.exception.AlreadyExistsException;
@@ -14,6 +15,7 @@ import dev.dev_store_api.model.dto.request.LoginRequest;
 import dev.dev_store_api.model.dto.request.UpdateRequest;
 import dev.dev_store_api.model.dto.response.AccountResponse;
 import dev.dev_store_api.model.dto.response.LoginResponse;
+import dev.dev_store_api.model.type.EMessage;
 import dev.dev_store_api.model.type.EProvider;
 import dev.dev_store_api.model.type.ERole;
 import dev.dev_store_api.model.type.EStatus;
@@ -26,6 +28,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -38,6 +41,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.security.SecureRandom;
+
 @Service
 public class AccountService {
 
@@ -49,11 +53,12 @@ public class AccountService {
     private final MultiAgentRepository multiAgentRepository;
     private static final SecureRandom random = new SecureRandom();
     private final AuthFactory authFactory;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AccountService(AccountRepository accountRepository,
                           AccountRelationRepository relationRepository,
                           GenericMapper genericMapper,
-                          AccountRoleService accountRoleService, JwtService jwtService, MultiAgentRepository multiAgentRepository, AuthFactory authFactory) {
+                          AccountRoleService accountRoleService, JwtService jwtService, MultiAgentRepository multiAgentRepository, AuthFactory authFactory, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.relationRepository = relationRepository;
         this.genericMapper = genericMapper;
@@ -61,6 +66,7 @@ public class AccountService {
         this.jwtService = jwtService;
         this.multiAgentRepository = multiAgentRepository;
         this.authFactory = authFactory;
+        this.eventPublisher = eventPublisher;
     }
 
     public Account findAccountByIdentifier(String identifier) {
@@ -72,73 +78,69 @@ public class AccountService {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .findFirst()
-                .orElseThrow(() -> new NotFoundException("User not found or inactive!"));
+                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("identifier", identifier)));
     }
+
     @Transactional
     public AccountResponse registerUser(AccountDTO dto) {
-        return createAccount(dto, ERole.USER, EProvider.SYSTEM);
+        return registerSystem(dto, ERole.USER);
     }
 
     @Transactional
     public AccountResponse registerAdmin(AccountDTO dto) {
-        return createAccount(dto, ERole.ADMIN, EProvider.SYSTEM);
+        return registerSystem(dto, ERole.ADMIN);
     }
 
     @Transactional
     public AccountResponse registerWithFacebook(AccountDTO dto) {
-        return createAccount(dto, ERole.USER, EProvider.FACEBOOK);
+        return registerExternal(dto, EProvider.FACEBOOK);
     }
 
     @Transactional
     public AccountResponse registerWithGoogle(AccountDTO dto) {
-        return createAccount(dto, ERole.USER, EProvider.GOOGLE);
+        return registerExternal(dto, EProvider.GOOGLE);
     }
 
-    private AccountResponse createAccount(AccountDTO dto, ERole role, EProvider provider) {
+    private AccountResponse registerExternal(AccountDTO dto, EProvider provider) {
+        Account account = createAccount(dto, ERole.USER, provider);
+        return genericMapper.toDTO(account, AccountResponse.class);
+    }
+
+    private AccountResponse registerSystem(AccountDTO dto, ERole role) {
+        Account account = createAccount(dto, role, EProvider.SYSTEM);
+        eventPublisher.publishEvent(new AccountCreatedEvent(account));
+        return genericMapper.toDTO(account, AccountResponse.class);
+    }
+
+    private Account createAccount(AccountDTO dto, ERole role, EProvider provider) {
         checkUsernameExists(dto.getUsername());
         checkEmailExists(dto.getEmail());
         Account account = authFactory.createAccount(dto, provider);
         account = accountRepository.save(account);
         accountRoleService.create(account, role);
-        return genericMapper.toDTO(account, AccountResponse.class);
+        return account;
     }
-//    @Transactional
-//    public AccountResponse createAccount(AccountDTO accountDTO, String role, EProvider provider) {
-//        try {
-//            checkUsernameExists(accountDTO.getUsername());
-//            checkEmailExists(accountDTO.getEmail());
-//            Account account = genericMapper.toEntity(accountDTO, Account.class);
-//            account.setPassword(hashPassword(accountDTO.getPassword()));
-//            account.setStatus(EStatus.UNACTIVE.getValue());
-//            account.setAuthProvider(provider);
-//            String token = generateOtp();
-//            account.setOtpCode(token);
-//            account = accountRepository.save(account);
-//            accountRoleService.create(account, role);
-//
-//            return genericMapper.toDTO(account, AccountResponse.class);
-//        } catch (IllegalArgumentException e) {
-//            throw new BadRequestException("Invalid account data provided.");
-//        }
-//    }
-    public void verifyOtp(String username, String otp){
+
+    public void verifyOtp(String username, String otp) {
         Account account = findAccountByIdentifier(username);
-            if(!otp.equals(account.getOtpCode())){
-                throw new BadRequestException("Invalid otp");
-            }
+        if (!otp.equals(account.getOtpCode())) {
+            throw new BadRequestException(EMessage.INVALID.getMessage());
+        }
         account.setOtpCode(null);
         account.setStatus(EStatus.ACTIVE.getValue());
         accountRepository.save(account);
     }
-    public void refreshOtp(String username){
+
+    public void refreshOtp(String username) {
         Account account = findAccountByIdentifier(username);
         String token = generateOtp();
         account.setOtpCode(token);
         accountRepository.save(account);
     }
+
     public LoginResponse validateUser(LoginRequest loginRequest, HttpServletRequest request) {
         Account account = findAccountByIdentifier(loginRequest.getIdentifier());
-        if(account.getStatus() != EStatus.ACTIVE.getValue()) {
+        if (account.getStatus() != EStatus.ACTIVE.getValue()) {
             throw new AuthException(HttpStatus.FORBIDDEN, "Account FORBIDDEN");
         }
         if (!BCrypt.checkpw(loginRequest.getPassword(), account.getPassword())) {
@@ -182,27 +184,27 @@ public class AccountService {
 
     public String logout(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new BadRequestException("Refresh token is required.");
+            throw new BadRequestException(EMessage.REFRESH_TOKEN_REQUIRED.getMessage());
         }
         MultiAgent session = multiAgentRepository.findByRefreshToken(refreshToken)
                 .orElseThrow(() ->
-                        new BadRequestException("Logout failed: Session not found or already revoked.")
+                            new BadRequestException(EMessage.REFRESH_TOKEN_REQUIRED.getMessage())
                 );
         session.setRefreshToken(null);
         multiAgentRepository.save(session);
-        return "LOGOUT_SUCCESSFUL";
+        return EMessage.SUCCESS.getMessage();
     }
 
     public LoginResponse refreshToken(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new BadRequestException("Refresh token is required.");
+            throw new BadRequestException(EMessage.REFRESH_TOKEN_REQUIRED.getMessage());
         }
         if (!jwtService.validateToken(refreshToken)) {
-            throw new BadRequestException("Invalid Refresh Token.");
+            throw new BadRequestException(EMessage.INVALID.getMessage());
         }
 
         MultiAgent session = multiAgentRepository.findByRefreshToken(refreshToken)
-                .orElseThrow(() -> new BadRequestException("Refresh Token not found or revoked. Please re-login."));
+                .orElseThrow(() -> new BadRequestException(EMessage.REFRESH_TOKEN_REQUIRED.getMessage()));
 
         String identifier = jwtService.extract(refreshToken);
 
@@ -224,15 +226,14 @@ public class AccountService {
 
     public AccountResponse getAccount(String username) {
         Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException(
-                        String.format("Account with username '%s' not found!", username)
+                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("username", username)
                 ));
         return genericMapper.toDTO(account, AccountResponse.class);
     }
 
     public Page<AccountResponse> getAllRelationAccounts(String username, Pageable pageable) {
         Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User not found: " + username));
+                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("username", username)));
 
         Page<AccountRelation> relations =
                 relationRepository.findAllByParentId(account.getId(), pageable);
@@ -243,7 +244,7 @@ public class AccountService {
     @Transactional
     public AccountResponse updateAccount(String username, UpdateRequest accountDTO) {
         Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User not found: " + username));
+                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("username", username)));
 
         BeanUtils.copyProperties(accountDTO, account, getNullPropertyNames(accountDTO));
 
@@ -254,7 +255,7 @@ public class AccountService {
     @Transactional
     public void changePassword(String username, String oldPassword, String newPassword) {
         Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User not found: " + username));
+                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("username", username)));
 
         if (!BCrypt.checkpw(oldPassword, account.getPassword())) {
             throw new AuthException("Old password is incorrect!");
@@ -267,7 +268,7 @@ public class AccountService {
     @Transactional
     public void deleteAccount(String username) {
         Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User not found: " + username));
+                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("username", username)));
 
         accountRepository.delete(account);
     }

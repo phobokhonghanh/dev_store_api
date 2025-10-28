@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Builder
 public class BaseResponse<T> {
-    private EMessage message;
+    private String message;
     private T data;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime timestamp;

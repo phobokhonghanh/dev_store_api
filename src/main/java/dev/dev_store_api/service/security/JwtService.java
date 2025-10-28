@@ -1,9 +1,11 @@
 package dev.dev_store_api.service.security;
 
-import io.jsonwebtoken.*;
+import dev.dev_store_api.libs.constant.properties.JwtProperties;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -12,15 +14,14 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret-key}")
-    private String secret;
-    @Value("${jwt.expiration}")
-    private long expiration;
-    @Value("${jwt.refresh-expiration}")
-    private long refresh;
+    private final JwtProperties jwtProperties;
+
+    public JwtService(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+    }
 
     private Key getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(String.valueOf(this.secret));
+        byte[] keyBytes = Decoders.BASE64.decode(String.valueOf(jwtProperties.secretKey()));
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -28,7 +29,7 @@ public class JwtService {
         return Jwts.builder()
                 .setSubject(subject)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + this.expiration))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.expiration()))
                 .signWith(this.getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -36,7 +37,7 @@ public class JwtService {
         return Jwts.builder()
                 .setSubject(subject)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + this.refresh))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.refreshExpiration()))
                 .signWith(this.getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 public class ResponseFactory {
-    public static <T> ResponseEntity<BaseResponse<T>> success(T data, EMessage message, HttpStatus status) {
+    public static <T> ResponseEntity<BaseResponse<T>> success(T data, String message, HttpStatus status) {
         return ResponseEntity.status(status)
                 .body(BaseResponse.<T>builder()
                         .message(message)
@@ -14,7 +14,7 @@ public class ResponseFactory {
                         .timestamp(DateTimeFactory.now())
                         .build());
     }
-    public static <T> ResponseEntity<BaseResponse<T>> error(EMessage message, HttpStatus status) {
+    public static <T> ResponseEntity<BaseResponse<T>> error(String message, HttpStatus status) {
         return ResponseEntity.status(status)
                 .body(BaseResponse.<T>builder()
                         .message(message)
