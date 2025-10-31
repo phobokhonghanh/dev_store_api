@@ -85,12 +85,7 @@ nbdist/
 *.trace.db
 
 # --- Environment / Config Files ---
-application.yml
-application-*.yml
-application-*.yaml
-application-*.properties
 *.env
-.env.*
 
 ########################################
 ### Frontend (if exists) ###
