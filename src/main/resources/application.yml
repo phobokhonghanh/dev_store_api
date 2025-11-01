@@ -1,18 +1,15 @@
 app:
+  domain: ${DOMAIN}
+  version: ${VERSION}
   api:
-    domain: ${DOMAIN}
-    version: ${VERSION}
-    url: ${app.api.domain}/api/${app.api.version}
-
-  docker:
-    compose:
-      enabled: false
+    context: "/api/${app.version}"
+    url: ${app.domain}${app.api.context}
 
   docs:
     swagger:
       openapi:
         server:
-          url: "${app.domain}"
+          url: ${app.domain}
           description: "Development environment"
         info:
           title: "Tutorial Management API"
@@ -29,7 +26,11 @@ app:
 
 spring:
   config:
-    import: optional:file:dev.env[.properties]
+    import: optional:file:./dev.env[.properties]
+
+  docker:
+    compose:
+      enabled: false
 
   application:
     name: dev-store-api
