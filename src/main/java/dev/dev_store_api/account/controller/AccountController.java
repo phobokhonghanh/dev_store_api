@@ -1,6 +1,7 @@
 package dev.dev_store_api.account.controller;
 
 import dev.dev_store_api.account.config.routes.AccountRoutes;
+import dev.dev_store_api.common.config.properties.AppProperties;
 import dev.dev_store_api.common.factory.ResponseFactory;
 import dev.dev_store_api.account.dto.UpdateRequest;
 import dev.dev_store_api.account.dto.AccountResponse;
@@ -16,7 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("${app.api.context}/accounts")
+@RequestMapping("${app.api.context}" + AccountRoutes.PREFIX)
 public class AccountController {
 
     private final AccountService accountService;

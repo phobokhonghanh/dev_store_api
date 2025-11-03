@@ -44,12 +44,12 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
                                 "/webjars/**",
-                                contextPath + AuthRoutes.LOGIN,
-                                contextPath + AuthRoutes.REGISTER + "/**",
-                                contextPath + AuthRoutes.VERIFY_OTP.split("/\\{")[0] + "/**",
-                                contextPath + AuthRoutes.REFRESH_OTP,
-                                contextPath + AuthRoutes.REFRESH_TOKEN,
-                                contextPath + AuthRoutes.REGISTRATION_STATUS
+                                contextPath +AuthRoutes.PREFIX + AuthRoutes.LOGIN,
+                                contextPath +AuthRoutes.PREFIX + AuthRoutes.REGISTER + "/**",
+                                contextPath +AuthRoutes.PREFIX + AuthRoutes.VERIFY_OTP.split("/\\{")[0] + "/**",
+                                contextPath +AuthRoutes.PREFIX + AuthRoutes.REFRESH_OTP,
+                                contextPath +AuthRoutes.PREFIX + AuthRoutes.REFRESH_TOKEN,
+                                contextPath +AuthRoutes.PREFIX + AuthRoutes.REGISTRATION_STATUS
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
