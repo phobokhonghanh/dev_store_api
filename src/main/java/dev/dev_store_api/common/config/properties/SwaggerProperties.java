@@ -1,4 +1,4 @@
-package dev.dev_store_api.common.config.docs;
+package dev.dev_store_api.common.config.properties;
 
 import lombok.Getter;
 import lombok.Setter;

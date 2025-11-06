@@ -1,5 +1,6 @@
 package dev.dev_store_api.common.config.docs;
 
+import dev.dev_store_api.common.config.properties.SwaggerProperties;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
