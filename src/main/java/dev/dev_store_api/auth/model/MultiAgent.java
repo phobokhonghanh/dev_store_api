@@ -37,6 +37,6 @@ public class MultiAgent {
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private Boolean isActive;
 
-    @Column(nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @Column(nullable = false, insertable = false, updatable = false)
     private LocalDateTime createdAt;
 }
