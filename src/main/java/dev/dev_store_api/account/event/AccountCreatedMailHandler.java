@@ -2,13 +2,13 @@ package dev.dev_store_api.account.event;
 
 import dev.dev_store_api.account.model.Account;
 import dev.dev_store_api.account.repository.AccountRepository;
-import dev.dev_store_api.common.config.properties.AppProperties;
 import dev.dev_store_api.auth.config.routes.AuthRoutes;
+import dev.dev_store_api.auth.service.security.JwtService;
+import dev.dev_store_api.common.config.properties.ApiProperties;
 import dev.dev_store_api.common.event.AppEvent;
 import dev.dev_store_api.common.event.AppEventHandler;
 import dev.dev_store_api.common.model.type.EStatus;
 import dev.dev_store_api.common.service.email.EmailService;
-import dev.dev_store_api.auth.service.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ public class AccountCreatedMailHandler implements AppEventHandler<AccountCreated
 
     private final EmailService emailService;
     private final JwtService jwtService;
-    private final AppProperties appProperties;
+    private final ApiProperties apiProperties;
     private final AccountRepository accountRepository; // Injected repository
 
     @Override
@@ -49,7 +49,7 @@ public class AccountCreatedMailHandler implements AppEventHandler<AccountCreated
 
         String token = jwtService.generateToken(account.getOtpCode());
         String link = UriComponentsBuilder.newInstance()
-                .uri(URI.create(appProperties.api().url()))
+                .uri(URI.create(apiProperties.url()))
                 .path(AuthRoutes.VERIFY_OTP)
                 .queryParam("token", token)
                 .queryParam("redirect_url", origin) // Add origin as redirect_url

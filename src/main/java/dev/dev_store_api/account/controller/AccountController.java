@@ -1,13 +1,12 @@
 package dev.dev_store_api.account.controller;
 
 import dev.dev_store_api.account.config.routes.AccountRoutes;
-import dev.dev_store_api.common.config.properties.AppProperties;
-import dev.dev_store_api.common.factory.ResponseFactory;
-import dev.dev_store_api.account.dto.UpdateRequest;
 import dev.dev_store_api.account.dto.AccountResponse;
-import dev.dev_store_api.common.dto.BaseResponse;
-import dev.dev_store_api.common.model.type.EMessage;
+import dev.dev_store_api.account.dto.UpdateRequest;
 import dev.dev_store_api.account.service.AccountService;
+import dev.dev_store_api.common.dto.BaseResponse;
+import dev.dev_store_api.common.factory.ResponseFactory;
+import dev.dev_store_api.common.model.type.EMessage;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

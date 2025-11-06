@@ -1,9 +1,29 @@
 app:
   domain: ${DOMAIN}
   version: ${VERSION}
+
   api:
     context: "/api/${app.version}"
     url: ${app.domain}${app.api.context}
+
+  cors:
+    allowed-origin-patterns:
+      - ${DOMAIN_CLIENT}
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Content-Type
+      - Authorization
+      - X-Requested-With
+    exposed-headers:
+      - Authorization
+      - X-Total-Count
+    allow-credentials: true
+    max-age: 3600
 
   docs:
     swagger:
