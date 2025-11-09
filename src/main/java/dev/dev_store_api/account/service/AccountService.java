@@ -1,29 +1,32 @@
 package dev.dev_store_api.account.service;
 
+import dev.dev_store_api.account.dto.AccountDTO;
+import dev.dev_store_api.account.dto.AccountResponse;
+import dev.dev_store_api.account.dto.UpdateRequest;
 import dev.dev_store_api.account.event.AccountCreatedEvent;
+import dev.dev_store_api.account.model.Account;
+import dev.dev_store_api.account.model.AccountRelation;
+import dev.dev_store_api.account.repository.AccountRelationRepository;
+import dev.dev_store_api.account.repository.AccountRepository;
+import dev.dev_store_api.account.repository.AccountRoleRepository;
+import dev.dev_store_api.auth.dto.LoginRequest;
+import dev.dev_store_api.auth.dto.LoginResponse;
 import dev.dev_store_api.auth.factory.AuthFactory;
-import dev.dev_store_api.common.util.GenericMapper;
+import dev.dev_store_api.auth.service.CookieService;
+import dev.dev_store_api.auth.service.MultiAgentService;
+import dev.dev_store_api.auth.service.security.JwtService;
+import dev.dev_store_api.common.config.properties.JwtProperties;
 import dev.dev_store_api.common.exception.AlreadyExistsException;
 import dev.dev_store_api.common.exception.AuthException;
 import dev.dev_store_api.common.exception.BadRequestException;
 import dev.dev_store_api.common.exception.NotFoundException;
-import dev.dev_store_api.account.model.Account;
-import dev.dev_store_api.account.model.AccountRelation;
-import dev.dev_store_api.auth.model.MultiAgent;
-import dev.dev_store_api.account.dto.AccountDTO;
-import dev.dev_store_api.auth.dto.LoginRequest;
-import dev.dev_store_api.account.dto.UpdateRequest;
-import dev.dev_store_api.account.dto.AccountResponse;
-import dev.dev_store_api.auth.dto.LoginResponse;
 import dev.dev_store_api.common.model.type.EMessage;
 import dev.dev_store_api.common.model.type.EProvider;
 import dev.dev_store_api.common.model.type.ERole;
 import dev.dev_store_api.common.model.type.EStatus;
-import dev.dev_store_api.account.repository.AccountRelationRepository;
-import dev.dev_store_api.account.repository.AccountRepository;
-import dev.dev_store_api.auth.repository.MultiAgentRepository;
-import dev.dev_store_api.auth.service.security.JwtService;
+import dev.dev_store_api.common.util.GenericMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
@@ -31,42 +34,51 @@ import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import java.security.SecureRandom;
 
 @Service
 public class AccountService {
 
     private final AccountRepository accountRepository;
+    private final AccountRoleRepository accountRoleRepository;
     private final AccountRelationRepository relationRepository;
     private final GenericMapper genericMapper;
     private final AccountRoleService accountRoleService;
     private final JwtService jwtService;
-    private final MultiAgentRepository multiAgentRepository;
+    private final MultiAgentService multiAgentService;
     private static final SecureRandom random = new SecureRandom();
     private final AuthFactory authFactory;
     private final ApplicationEventPublisher eventPublisher;
+    private final CookieService cookieService;
+    private final JwtProperties jwtProperties;
 
-    public AccountService(AccountRepository accountRepository,
+    public AccountService(AccountRepository accountRepository, AccountRoleRepository accountRoleRepository,
                           AccountRelationRepository relationRepository,
                           GenericMapper genericMapper,
-                          AccountRoleService accountRoleService, JwtService jwtService, MultiAgentRepository multiAgentRepository, AuthFactory authFactory, ApplicationEventPublisher eventPublisher) {
+                          AccountRoleService accountRoleService, JwtService jwtService, MultiAgentService multiAgentService, AuthFactory authFactory, ApplicationEventPublisher eventPublisher, CookieService cookieService, JwtProperties jwtProperties) {
         this.accountRepository = accountRepository;
+        this.accountRoleRepository = accountRoleRepository;
         this.relationRepository = relationRepository;
         this.genericMapper = genericMapper;
         this.accountRoleService = accountRoleService;
         this.jwtService = jwtService;
-        this.multiAgentRepository = multiAgentRepository;
+        this.multiAgentService = multiAgentService;
         this.authFactory = authFactory;
         this.eventPublisher = eventPublisher;
+        this.cookieService = cookieService;
+        this.jwtProperties = jwtProperties;
     }
 
     public Account findAccountByIdentifier(String identifier) {
@@ -141,8 +153,15 @@ public class AccountService {
         account.setOtpCode(token);
         accountRepository.save(account);
     }
+    public List<String> getRoles(Account account) {
+        return accountRoleRepository.findByAccount((account))
+                .stream()
+                .map(ar -> ar.getRole().getName())
+                .distinct()
+                .toList();
+    }
 
-    public LoginResponse validateUser(LoginRequest loginRequest, HttpServletRequest request) {
+    public LoginResponse validateUser(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
         Account account = findAccountByIdentifier(loginRequest.getIdentifier());
         if (account.getStatus() != EStatus.ACTIVE.getValue()) {
             throw new AuthException(HttpStatus.FORBIDDEN, "Account FORBIDDEN");
@@ -150,56 +169,31 @@ public class AccountService {
         if (!BCrypt.checkpw(loginRequest.getPassword(), account.getPassword())) {
             throw new AuthException("Invalid password!");
         }
+        List<String> roles = getRoles(account);
         String agent = request.getHeader("User-Agent");
         String ip = request.getRemoteAddr();
 
-        Optional<MultiAgent> existingSessionOpt =
-                multiAgentRepository.findByAccountAndAgent(account, agent);
-        MultiAgent session;
 
         String token = jwtService.generateToken(loginRequest.getIdentifier());
         String refreshToken = jwtService.generateRefreshToken(loginRequest.getIdentifier());
 
-        if (existingSessionOpt.isPresent()) {
-            session = existingSessionOpt.get();
-
-            if (!session.getIsActive()) {
-                throw new AuthException("This device has been deactivated. Please contact support.");
-            }
-            session.setToken(token);
-            session.setRefreshToken(refreshToken);
-        } else {
-            session = new MultiAgent();
-            session.setAccount(account);
-            session.setAgent(agent);
-            session.setIpAddress(ip);
-            session.setToken(token);
-            session.setRefreshToken(refreshToken);
-            session.setIsActive(true);
-        }
-        multiAgentRepository.save(session);
+        multiAgentService.createOrUpdateSession(account, agent, ip, token, refreshToken);
+        createAndAddTokenCookies(response, token, refreshToken);
 
         return LoginResponse.builder()
                 .username(account.getUsername())
-                .token(token)
-                .refreshToken(refreshToken)
+                .roles(roles)
                 .build();
     }
 
-    public String logout(String refreshToken) {
+    public void logout(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new BadRequestException(EMessage.REFRESH_TOKEN_REQUIRED.getMessage());
         }
-        MultiAgent session = multiAgentRepository.findByRefreshToken(refreshToken)
-                .orElseThrow(() ->
-                            new BadRequestException(EMessage.REFRESH_TOKEN_REQUIRED.getMessage())
-                );
-        session.setRefreshToken(null);
-        multiAgentRepository.save(session);
-        return EMessage.SUCCESS.getMessage();
+        multiAgentService.clearRefreshToken(refreshToken);
     }
 
-    public LoginResponse refreshToken(String refreshToken) {
+    public LoginResponse refreshToken(String refreshToken, HttpServletResponse response) {
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new BadRequestException(EMessage.REFRESH_TOKEN_REQUIRED.getMessage());
         }
@@ -207,31 +201,29 @@ public class AccountService {
             throw new BadRequestException(EMessage.INVALID.getMessage());
         }
 
-        MultiAgent session = multiAgentRepository.findByRefreshToken(refreshToken)
-                .orElseThrow(() -> new BadRequestException(EMessage.REFRESH_TOKEN_REQUIRED.getMessage()));
-
         String identifier = jwtService.extract(refreshToken);
 
         String newToken = jwtService.generateToken(identifier);
         String newRefreshToken = jwtService.generateRefreshToken(identifier);
 
-        session.setToken(newToken);
-        session.setRefreshToken(newRefreshToken);
-        multiAgentRepository.save(session);
+        multiAgentService.updateSession(newToken, newRefreshToken);
 
         Account account = findAccountByIdentifier(identifier);
+        List<String> roles = getRoles(account);
+        createAndAddTokenCookies(response, newToken, newRefreshToken);
 
         return LoginResponse.builder()
                 .username(account.getUsername())
-                .token(newToken)
-                .refreshToken(newRefreshToken)
+                .roles(roles)
                 .build();
+    }
+    public Account getAccountByToken(String token) {
+        String identifier = jwtService.extract(token);
+        return findAccountByIdentifier(identifier);
     }
 
     public AccountResponse getAccount(String username) {
-        Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("username", username)
-                ));
+        Account account = findAccountByIdentifier(username);
         return genericMapper.toDTO(account, AccountResponse.class);
     }
 
@@ -277,6 +269,11 @@ public class AccountService {
         accountRepository.delete(account);
     }
 
+    public String getAccountStatusByEmail(String email) {
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("email", email)));
+        return EStatus.values()[account.getStatus()].name();
+    }
     // ===========================
     // PRIVATE HELPERS
     // ===========================
@@ -297,6 +294,11 @@ public class AccountService {
         }
     }
 
+    public static String generateOtp() {
+        int number = random.nextInt(1_000_000);
+        return String.format("%06d", number);
+    }
+
     private String hashPassword(String rawPassword) {
         return BCrypt.hashpw(rawPassword, BCrypt.gensalt(10));
     }
@@ -314,14 +316,16 @@ public class AccountService {
         return emptyNames.toArray(result);
     }
 
-    public static String generateOtp() {
-        int number = random.nextInt(1_000_000);
-        return String.format("%06d", number);
+    private void createCookieHeaders(HttpServletResponse response, ResponseCookie... cookies) {
+        for (ResponseCookie cookie : cookies) {
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        }
     }
 
-    public String getAccountStatusByEmail(String email) {
-        Account account = accountRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("email", email)));
-        return EStatus.values()[account.getStatus()].name();
+    private void createAndAddTokenCookies(HttpServletResponse response, String accessToken, String refreshToken) {
+        ResponseCookie accessTokenCookie = cookieService.createCookie("access_token", accessToken, jwtProperties.expiration() / 1000);
+        ResponseCookie refreshTokenCookie = cookieService.createCookie("refresh_token", refreshToken, jwtProperties.refreshExpiration() / 1000);
+        createCookieHeaders(response, accessTokenCookie, refreshTokenCookie);
     }
+
 }

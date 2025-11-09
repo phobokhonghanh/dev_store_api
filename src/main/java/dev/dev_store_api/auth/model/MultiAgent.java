@@ -1,10 +1,10 @@
 package dev.dev_store_api.auth.model;
 
-import java.time.LocalDateTime;
-
 import dev.dev_store_api.account.model.Account;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "multi_agent")
@@ -28,10 +28,10 @@ public class MultiAgent {
     @Column(nullable = false, length = 45)
     private String ipAddress;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String token;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String refreshToken;
 
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
@@ -39,4 +39,13 @@ public class MultiAgent {
 
     @Column(nullable = false, insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public MultiAgent(Account account, String agent, String ipAddress, String token, String refreshToken, boolean isActive) {
+        this.account = account;
+        this.agent = agent;
+        this.ipAddress = ipAddress;
+        this.token = token;
+        this.refreshToken = refreshToken;
+        this.isActive = isActive;
+    }
 }

@@ -16,6 +16,8 @@ public enum EMessage {
     INTERNAL_ERROR("Internal server error"),
     NOT_FOUND("Not found %s %s"),
     REFRESH_TOKEN_REQUIRED("Refresh token is required"),
+    DEACTIVATED("This device has been deactivated. Please contact support."),
+
     ;
     private final String message;
 

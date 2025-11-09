@@ -13,4 +13,6 @@ public interface MultiAgentRepository extends JpaRepository<MultiAgent, Long> {
     Optional<MultiAgent> findByRefreshToken(String refreshToken);
     Optional<MultiAgent> findByAccountAndAgent(Account account, String agent);
     boolean existsByTokenAndIsActiveTrue(String token);
+
+    List<MultiAgent> findByAccount(Account account);
 }
