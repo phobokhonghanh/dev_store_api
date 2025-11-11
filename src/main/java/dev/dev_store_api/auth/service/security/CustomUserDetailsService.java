@@ -1,10 +1,10 @@
 package dev.dev_store_api.auth.service.security;
 
+import dev.dev_store_api.account.model.Account;
 import dev.dev_store_api.common.exception.AuthException;
 import dev.dev_store_api.common.exception.NotFoundException;
-import dev.dev_store_api.account.model.Account;
 import dev.dev_store_api.common.model.type.EStatus;
-import dev.dev_store_api.account.service.AccountService;
+import dev.dev_store_api.common.service.adapter.AdapterAccountService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,16 +14,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final AccountService accountService;
+    private final AdapterAccountService adapterAccountService;
 
-    public CustomUserDetailsService(AccountService accountService) {
-        this.accountService = accountService;
+    public CustomUserDetailsService(AdapterAccountService adapterAccountService) {
+        this.adapterAccountService = adapterAccountService;
     }
 
     @Override
     public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
         try {
-            Account account = accountService.findAccountByIdentifier(identifier);
+            Account account = adapterAccountService.findAccountByIdentifier(identifier);
             if(account.getStatus() != EStatus.ACTIVE.getValue()) {
                 throw new AuthException(HttpStatus.FORBIDDEN, "Account FORBIDDEN");
             }

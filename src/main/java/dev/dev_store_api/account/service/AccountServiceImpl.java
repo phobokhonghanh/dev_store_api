@@ -25,6 +25,7 @@ import dev.dev_store_api.common.model.type.EProvider;
 import dev.dev_store_api.common.model.type.ERole;
 import dev.dev_store_api.common.model.type.EStatus;
 import dev.dev_store_api.common.util.GenericMapper;
+import dev.dev_store_api.common.util.Libs;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
@@ -40,7 +41,6 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +49,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Service
-public class AccountService {
+public class AccountServiceImpl implements AccountServices {
 
     private final AccountRepository accountRepository;
     private final AccountRoleRepository accountRoleRepository;
@@ -58,16 +58,21 @@ public class AccountService {
     private final AccountRoleService accountRoleService;
     private final JwtService jwtService;
     private final MultiAgentService multiAgentService;
-    private static final SecureRandom random = new SecureRandom();
     private final AuthFactory authFactory;
     private final ApplicationEventPublisher eventPublisher;
     private final CookieService cookieService;
     private final JwtProperties jwtProperties;
 
-    public AccountService(AccountRepository accountRepository, AccountRoleRepository accountRoleRepository,
-                          AccountRelationRepository relationRepository,
-                          GenericMapper genericMapper,
-                          AccountRoleService accountRoleService, JwtService jwtService, MultiAgentService multiAgentService, AuthFactory authFactory, ApplicationEventPublisher eventPublisher, CookieService cookieService, JwtProperties jwtProperties) {
+    public AccountServiceImpl(AccountRepository accountRepository, AccountRoleRepository accountRoleRepository,
+                              AccountRelationRepository relationRepository,
+                              GenericMapper genericMapper,
+                              AccountRoleService accountRoleService,
+                              JwtService jwtService,
+                              MultiAgentService multiAgentService,
+                              AuthFactory authFactory,
+                              ApplicationEventPublisher eventPublisher,
+                              CookieService cookieService,
+                              JwtProperties jwtProperties) {
         this.accountRepository = accountRepository;
         this.accountRoleRepository = accountRoleRepository;
         this.relationRepository = relationRepository;
@@ -149,11 +154,11 @@ public class AccountService {
 
     public void refreshOtp(String username) {
         Account account = findAccountByIdentifier(username);
-        String token = generateOtp();
+        String token = Libs.generateOtp();
         account.setOtpCode(token);
         accountRepository.save(account);
     }
-    public List<String> getRoles(Account account) {
+    private List<String> getRoles(Account account) {
         return accountRoleRepository.findByAccount((account))
                 .stream()
                 .map(ar -> ar.getRole().getName())
@@ -161,7 +166,7 @@ public class AccountService {
                 .toList();
     }
 
-    public LoginResponse validateUser(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
+    public LoginResponse loginUser(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
         Account account = findAccountByIdentifier(loginRequest.getIdentifier());
         if (account.getStatus() != EStatus.ACTIVE.getValue()) {
             throw new AuthException(HttpStatus.FORBIDDEN, "Account FORBIDDEN");
@@ -257,7 +262,7 @@ public class AccountService {
             throw new AuthException("Old password is incorrect!");
         }
 
-        account.setPassword(hashPassword(newPassword));
+        account.setPassword(Libs.hashPassword(newPassword));
         accountRepository.save(account);
     }
 
@@ -274,6 +279,7 @@ public class AccountService {
                 .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("email", email)));
         return EStatus.values()[account.getStatus()].name();
     }
+
     // ===========================
     // PRIVATE HELPERS
     // ===========================
@@ -292,15 +298,6 @@ public class AccountService {
                     String.format("Email '%s' already exists!", email)
             );
         }
-    }
-
-    public static String generateOtp() {
-        int number = random.nextInt(1_000_000);
-        return String.format("%06d", number);
-    }
-
-    private String hashPassword(String rawPassword) {
-        return BCrypt.hashpw(rawPassword, BCrypt.gensalt(10));
     }
 
     private String[] getNullPropertyNames(Object source) {

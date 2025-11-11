@@ -1,8 +1,6 @@
 package dev.dev_store_api.auth.controller;
 
-import dev.dev_store_api.account.service.AccountService;
 import dev.dev_store_api.auth.config.routes.AgentRoutes;
-import dev.dev_store_api.auth.config.routes.AuthRoutes;
 import dev.dev_store_api.auth.dto.MultiAgentResponse;
 import dev.dev_store_api.auth.service.MultiAgentService;
 import dev.dev_store_api.common.dto.BaseResponse;

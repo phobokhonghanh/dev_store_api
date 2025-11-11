@@ -1,8 +1,7 @@
 package dev.dev_store_api.auth.service;
 
 import dev.dev_store_api.account.model.Account;
-import dev.dev_store_api.account.repository.AccountRepository;
-import dev.dev_store_api.account.service.AccountService;
+import dev.dev_store_api.account.service.AccountServiceImpl;
 import dev.dev_store_api.auth.dto.MultiAgentResponse;
 import dev.dev_store_api.auth.model.MultiAgent;
 import dev.dev_store_api.auth.repository.MultiAgentRepository;
@@ -11,8 +10,6 @@ import dev.dev_store_api.common.exception.BadRequestException;
 import dev.dev_store_api.common.exception.NotFoundException;
 import dev.dev_store_api.common.model.type.EMessage;
 import dev.dev_store_api.common.util.GenericMapper;
-import jakarta.validation.constraints.NotNull;
-import org.aspectj.weaver.loadtime.Agent;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,12 +18,12 @@ import java.util.Optional;
 @Service
 public class MultiAgentService {
     private final MultiAgentRepository multiAgentRepository;
-    private final AccountService  accountService;
+    private final AccountServiceImpl accountServiceImpl;
     private final GenericMapper genericMapper;
 
-    public MultiAgentService(MultiAgentRepository multiAgentRepository, AccountService accountService, GenericMapper genericMapper) {
+    public MultiAgentService(MultiAgentRepository multiAgentRepository, AccountServiceImpl accountServiceImpl, GenericMapper genericMapper) {
         this.multiAgentRepository = multiAgentRepository;
-        this.accountService = accountService;
+        this.accountServiceImpl = accountServiceImpl;
         this.genericMapper = genericMapper;
     }
 
@@ -75,7 +72,7 @@ public class MultiAgentService {
     }
 
     public List<MultiAgentResponse> getSessionsByToken(String token) {
-        Account account = accountService.getAccountByToken(token);
+        Account account = accountServiceImpl.getAccountByToken(token);
         List<MultiAgent> listMultiAgent = multiAgentRepository.findByAccount(account);
         return genericMapper.toDTOList(listMultiAgent,MultiAgentResponse.class);
     }
@@ -86,14 +83,14 @@ public class MultiAgentService {
     }
 
     public void logoutSession(String token, Long id) {
-        accountService.getAccountByToken(token);
+        accountServiceImpl.getAccountByToken(token);
         MultiAgent session = getSessionById(id);
         session.setToken(null);
         session.setRefreshToken(null);
         multiAgentRepository.save(session);
     }
     public void logoutAllSessions(String token) {
-        Account account = accountService.getAccountByToken(token);
+        Account account = accountServiceImpl.getAccountByToken(token);
         List<MultiAgent> sessions = multiAgentRepository.findByAccount(account);
         for (MultiAgent session : sessions) {
             session.setToken(null);
@@ -103,7 +100,7 @@ public class MultiAgentService {
     }
 
     public void deleteSession(String token, Long id) {
-        accountService.getAccountByToken(token);
+        accountServiceImpl.getAccountByToken(token);
         MultiAgent session = getSessionById(id);
         session.setIsActive(false);
         multiAgentRepository.save(session);
