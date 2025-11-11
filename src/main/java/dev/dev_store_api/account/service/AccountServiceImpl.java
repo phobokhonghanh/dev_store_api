@@ -25,13 +25,11 @@ import dev.dev_store_api.common.model.type.EProvider;
 import dev.dev_store_api.common.model.type.ERole;
 import dev.dev_store_api.common.model.type.EStatus;
 import dev.dev_store_api.common.util.GenericMapper;
+import dev.dev_store_api.common.util.GenericUpdater;
 import dev.dev_store_api.common.util.Libs;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.BeanWrapper;
-import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,20 +39,18 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Service
-public class AccountServiceImpl implements AccountServices {
-
+public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final AccountRoleRepository accountRoleRepository;
     private final AccountRelationRepository relationRepository;
     private final GenericMapper genericMapper;
+    private final GenericUpdater genericUpdater;
     private final AccountRoleService accountRoleService;
     private final JwtService jwtService;
     private final MultiAgentService multiAgentService;
@@ -62,21 +58,22 @@ public class AccountServiceImpl implements AccountServices {
     private final ApplicationEventPublisher eventPublisher;
     private final CookieService cookieService;
     private final JwtProperties jwtProperties;
+    private final AccountLookupService accountLookupService;
 
     public AccountServiceImpl(AccountRepository accountRepository, AccountRoleRepository accountRoleRepository,
                               AccountRelationRepository relationRepository,
-                              GenericMapper genericMapper,
+                              GenericMapper genericMapper, GenericUpdater genericUpdater,
                               AccountRoleService accountRoleService,
-                              JwtService jwtService,
-                              MultiAgentService multiAgentService,
+                              JwtService jwtService, MultiAgentService multiAgentService,
                               AuthFactory authFactory,
                               ApplicationEventPublisher eventPublisher,
                               CookieService cookieService,
-                              JwtProperties jwtProperties) {
+                              JwtProperties jwtProperties, AccountLookupService accountLookupService) {
         this.accountRepository = accountRepository;
         this.accountRoleRepository = accountRoleRepository;
         this.relationRepository = relationRepository;
         this.genericMapper = genericMapper;
+        this.genericUpdater = genericUpdater;
         this.accountRoleService = accountRoleService;
         this.jwtService = jwtService;
         this.multiAgentService = multiAgentService;
@@ -84,18 +81,12 @@ public class AccountServiceImpl implements AccountServices {
         this.eventPublisher = eventPublisher;
         this.cookieService = cookieService;
         this.jwtProperties = jwtProperties;
+        this.accountLookupService = accountLookupService;
     }
 
-    public Account findAccountByIdentifier(String identifier) {
-        return Stream.<Supplier<Optional<Account>>>of(
-                        () -> accountRepository.findByUsername(identifier),
-                        () -> accountRepository.findByEmail(identifier)
-                )
-                .map(Supplier::get)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("identifier", identifier)));
+    public String getAccountStatusByEmail(String email) {
+        Account account = accountLookupService.getAccountByEmail(email);
+        return EStatus.values()[account.getStatus()].name();
     }
 
     @Transactional
@@ -139,10 +130,10 @@ public class AccountServiceImpl implements AccountServices {
     }
 
     public void verifyOtp(String username, String token) {
-        if (!jwtService.validateToken(token)){
+        if (!jwtService.validateToken(token)) {
             throw new BadRequestException(EMessage.EXPIRED_INVALID.getMessage());
         }
-        Account account = findAccountByIdentifier(username);
+        Account account = accountLookupService.findAccountByIdentifier(username);
         String otp = jwtService.extract(token);
         if (!otp.equals(account.getOtpCode())) {
             throw new BadRequestException(EMessage.INVALID.format("otp"));
@@ -153,11 +144,12 @@ public class AccountServiceImpl implements AccountServices {
     }
 
     public void refreshOtp(String username) {
-        Account account = findAccountByIdentifier(username);
+        Account account = accountLookupService.findAccountByIdentifier(username);
         String token = Libs.generateOtp();
         account.setOtpCode(token);
         accountRepository.save(account);
     }
+
     private List<String> getRoles(Account account) {
         return accountRoleRepository.findByAccount((account))
                 .stream()
@@ -167,7 +159,7 @@ public class AccountServiceImpl implements AccountServices {
     }
 
     public LoginResponse loginUser(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
-        Account account = findAccountByIdentifier(loginRequest.getIdentifier());
+        Account account = accountLookupService.findAccountByIdentifier(loginRequest.getIdentifier());
         if (account.getStatus() != EStatus.ACTIVE.getValue()) {
             throw new AuthException(HttpStatus.FORBIDDEN, "Account FORBIDDEN");
         }
@@ -213,7 +205,7 @@ public class AccountServiceImpl implements AccountServices {
 
         multiAgentService.updateSession(newToken, newRefreshToken);
 
-        Account account = findAccountByIdentifier(identifier);
+        Account account = accountLookupService.findAccountByIdentifier(identifier);
         List<String> roles = getRoles(account);
         createAndAddTokenCookies(response, newToken, newRefreshToken);
 
@@ -222,13 +214,9 @@ public class AccountServiceImpl implements AccountServices {
                 .roles(roles)
                 .build();
     }
-    public Account getAccountByToken(String token) {
-        String identifier = jwtService.extract(token);
-        return findAccountByIdentifier(identifier);
-    }
 
     public AccountResponse getAccount(String username) {
-        Account account = findAccountByIdentifier(username);
+        Account account = accountLookupService.findAccountByIdentifier(username);
         return genericMapper.toDTO(account, AccountResponse.class);
     }
 
@@ -246,9 +234,7 @@ public class AccountServiceImpl implements AccountServices {
     public AccountResponse updateAccount(String username, UpdateRequest accountDTO) {
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("username", username)));
-
-        BeanUtils.copyProperties(accountDTO, account, getNullPropertyNames(accountDTO));
-
+        account = genericUpdater.patch(accountDTO, account, "id", "username");
         account = accountRepository.save(account);
         return genericMapper.toDTO(account, AccountResponse.class);
     }
@@ -274,12 +260,6 @@ public class AccountServiceImpl implements AccountServices {
         accountRepository.delete(account);
     }
 
-    public String getAccountStatusByEmail(String email) {
-        Account account = accountRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException(EMessage.NOT_FOUND.format("email", email)));
-        return EStatus.values()[account.getStatus()].name();
-    }
-
     // ===========================
     // PRIVATE HELPERS
     // ===========================
@@ -298,19 +278,6 @@ public class AccountServiceImpl implements AccountServices {
                     String.format("Email '%s' already exists!", email)
             );
         }
-    }
-
-    private String[] getNullPropertyNames(Object source) {
-        final BeanWrapper src = new BeanWrapperImpl(source);
-        java.beans.PropertyDescriptor[] pds = src.getPropertyDescriptors();
-
-        Set<String> emptyNames = new HashSet<>();
-        for (java.beans.PropertyDescriptor pd : pds) {
-            Object srcValue = src.getPropertyValue(pd.getName());
-            if (srcValue == null) emptyNames.add(pd.getName());
-        }
-        String[] result = new String[emptyNames.size()];
-        return emptyNames.toArray(result);
     }
 
     private void createCookieHeaders(HttpServletResponse response, ResponseCookie... cookies) {

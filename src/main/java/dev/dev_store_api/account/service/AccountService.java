@@ -11,10 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-public interface AccountServices {
-    Account findAccountByIdentifier(String identifier);
-    Account getAccountByToken(String token);
-
+public interface AccountService {
     AccountResponse registerUser(AccountDTO dto, String origin);
     AccountResponse registerAdmin(AccountDTO dto, String origin);
     AccountResponse registerWithFacebook(AccountDTO dto);
@@ -31,9 +28,4 @@ public interface AccountServices {
 
     LoginResponse loginUser(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response);
     LoginResponse refreshToken(String refreshToken, HttpServletResponse response);
-
-    String getAccountStatusByEmail(String email);
-
-
-
 }

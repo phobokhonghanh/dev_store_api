@@ -49,7 +49,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (!multiAgentService.checkToken(jwt)) {
+        if (!multiAgentService.isTokenActive(jwt)) {
             setUnauthorized(response, "Token revoked or inactive");
             return;
         }

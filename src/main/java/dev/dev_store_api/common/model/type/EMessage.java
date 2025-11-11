@@ -17,7 +17,6 @@ public enum EMessage {
     NOT_FOUND("Not found %s %s"),
     REFRESH_TOKEN_REQUIRED("Refresh token is required"),
     DEACTIVATED("This device has been deactivated. Please contact support."),
-
     ;
     private final String message;
 

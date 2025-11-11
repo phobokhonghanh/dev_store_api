@@ -1,8 +1,9 @@
 package dev.dev_store_api.auth.controller;
 
+import dev.dev_store_api.account.model.Account;
 import dev.dev_store_api.auth.config.routes.AgentRoutes;
 import dev.dev_store_api.auth.dto.MultiAgentResponse;
-import dev.dev_store_api.auth.service.MultiAgentService;
+import dev.dev_store_api.auth.service.MultiAgentServiceImpl;
 import dev.dev_store_api.common.dto.BaseResponse;
 import dev.dev_store_api.common.factory.ResponseFactory;
 import dev.dev_store_api.common.model.type.EMessage;
@@ -15,16 +16,16 @@ import java.util.List;
 @RestController
 @RequestMapping("${app.api.context}" + AgentRoutes.PREFIX)
 public class AgentController {
-    private final MultiAgentService multiAgentService;
+    private final MultiAgentServiceImpl multiAgentServiceImpl;
 
-    public AgentController(MultiAgentService multiAgentService) {
-        this.multiAgentService = multiAgentService;
+    public AgentController(MultiAgentServiceImpl multiAgentServiceImpl) {
+        this.multiAgentServiceImpl = multiAgentServiceImpl;
     }
 
     @GetMapping(value = AgentRoutes.GET_LIST)
     public ResponseEntity<BaseResponse<List<MultiAgentResponse>>> getList(
             @RequestHeader(name = "Authorization") String token) {
-        List<MultiAgentResponse> data = multiAgentService.getSessionsByToken(token);
+        List<MultiAgentResponse> data = multiAgentServiceImpl.getListSessionsByToken(token);
         return ResponseFactory.success(data, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
@@ -32,7 +33,7 @@ public class AgentController {
     public ResponseEntity<BaseResponse<Void>> logout(
             @RequestHeader(name = "Authorization") String token,
             @PathVariable Long id) {
-        multiAgentService.logoutSession(token, id);
+        multiAgentServiceImpl.logoutSession(token, id);
         return ResponseFactory.success(null, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
@@ -40,7 +41,7 @@ public class AgentController {
     public ResponseEntity<BaseResponse<Void>> logoutAll(
             @RequestHeader(name = "Authorization") String token
     ) {
-        multiAgentService.logoutAllSessions(token);
+        multiAgentServiceImpl.logoutAllSessions(token);
         return ResponseFactory.success(null, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
@@ -48,7 +49,7 @@ public class AgentController {
     public ResponseEntity<BaseResponse<Void>> delete(
             @RequestHeader(name = "Authorization") String token,
             @PathVariable Long id) {
-        multiAgentService.deleteSession(token, id);
+        multiAgentServiceImpl.deleteSession(token, id);
         return ResponseFactory.success(null, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
