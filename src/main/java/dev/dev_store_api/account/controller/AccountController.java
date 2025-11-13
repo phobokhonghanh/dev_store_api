@@ -3,7 +3,7 @@ package dev.dev_store_api.account.controller;
 import dev.dev_store_api.account.config.routes.AccountRoutes;
 import dev.dev_store_api.account.dto.AccountResponse;
 import dev.dev_store_api.account.dto.UpdateRequest;
-import dev.dev_store_api.account.service.AccountService;
+import dev.dev_store_api.account.service.AccountServiceImpl;
 import dev.dev_store_api.common.dto.BaseResponse;
 import dev.dev_store_api.common.factory.ResponseFactory;
 import dev.dev_store_api.common.model.type.EMessage;
@@ -19,15 +19,15 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("${app.api.context}" + AccountRoutes.PREFIX)
 public class AccountController {
 
-    private final AccountService accountService;
+    private final AccountServiceImpl accountServiceImpl;
 
-    public AccountController(AccountService accountService) {
-        this.accountService = accountService;
+    public AccountController(AccountServiceImpl accountServiceImpl) {
+        this.accountServiceImpl = accountServiceImpl;
     }
 
     @GetMapping(AccountRoutes.INFO)
     public ResponseEntity<BaseResponse<AccountResponse>> information(@RequestParam String username) {
-        AccountResponse result = accountService.getAccount(username);
+        AccountResponse result = accountServiceImpl.getAccount(username);
         return ResponseFactory.success(result, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
@@ -36,7 +36,7 @@ public class AccountController {
             @RequestParam String username,
             @Valid @RequestBody UpdateRequest accountDTO
     ) {
-        AccountResponse result = accountService.updateAccount(username, accountDTO);
+        AccountResponse result = accountServiceImpl.updateAccount(username, accountDTO);
         return ResponseFactory.success(result, EMessage.UPDATED.getMessage(), HttpStatus.OK);
     }
 
@@ -46,13 +46,13 @@ public class AccountController {
             @RequestParam String oldPassword,
             @RequestParam String newPassword
     ) {
-        accountService.changePassword(username, oldPassword, newPassword);
+        accountServiceImpl.changePassword(username, oldPassword, newPassword);
         return ResponseFactory.success(null, EMessage.UPDATED.getMessage(), HttpStatus.OK);
     }
 
     @DeleteMapping(AccountRoutes.DELETE)
     public ResponseEntity<BaseResponse<Void>> deleteAccount(@RequestParam String username) {
-        accountService.deleteAccount(username);
+        accountServiceImpl.deleteAccount(username);
         return ResponseFactory.success(null, EMessage.DELETED.getMessage(), HttpStatus.OK);
     }
 
@@ -63,7 +63,7 @@ public class AccountController {
             @RequestParam(defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<AccountResponse> result = accountService.getAllRelationAccounts(username, pageable);
+        Page<AccountResponse> result = accountServiceImpl.getAllRelationAccounts(username, pageable);
         return ResponseFactory.success(result, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 

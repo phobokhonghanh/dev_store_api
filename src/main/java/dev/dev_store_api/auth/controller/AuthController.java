@@ -2,7 +2,7 @@ package dev.dev_store_api.auth.controller;
 
 import dev.dev_store_api.account.dto.AccountDTO;
 import dev.dev_store_api.account.dto.AccountResponse;
-import dev.dev_store_api.account.service.AccountService;
+import dev.dev_store_api.account.service.AccountServiceImpl;
 import dev.dev_store_api.auth.config.routes.AuthRoutes;
 import dev.dev_store_api.auth.dto.LoginRequest;
 import dev.dev_store_api.auth.dto.LoginResponse;
@@ -24,28 +24,28 @@ import java.net.URI;
 @RequestMapping("${app.api.context}" + AuthRoutes.PREFIX)
 public class AuthController {
 
-    private final AccountService accountService;
+    private final AccountServiceImpl accountServiceImpl;
 
-    public AuthController(AccountService accountService) {
-        this.accountService = accountService;
+    public AuthController(AccountServiceImpl accountServiceImpl) {
+        this.accountServiceImpl = accountServiceImpl;
     }
 
     @PostMapping(value = AuthRoutes.REGISTER, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<AccountResponse>> registerUser(@Valid @RequestBody AccountDTO dto, @RequestHeader("Origin") String origin) {
-        AccountResponse result = accountService.registerUser(dto, origin);
+        AccountResponse result = accountServiceImpl.registerUser(dto, origin);
         return ResponseFactory.success(result, EMessage.CREATED.getMessage(), HttpStatus.CREATED);
     }
 
     @PostMapping(value = AuthRoutes.REGISTER_ADMIN, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<AccountResponse>> registerAdmin(@Valid @RequestBody AccountDTO accountDTO, @RequestHeader("Origin") String origin) {
-        AccountResponse result = accountService.registerAdmin(accountDTO, origin);
+        AccountResponse result = accountServiceImpl.registerAdmin(accountDTO, origin);
         return ResponseFactory.success(result, EMessage.CREATED.getMessage(), HttpStatus.CREATED);
     }
 
     @GetMapping(value = AuthRoutes.VERIFY_OTP)
     public ResponseEntity<Void> verifyOtp(@PathVariable String username, @RequestParam String token, @RequestParam("redirect_url") String redirectUrl) {
         try {
-            accountService.verifyOtp(username, token);
+            accountServiceImpl.verifyOtp(username, token);
             String successUrl = UriComponentsBuilder.fromUriString(redirectUrl)
                     .queryParam("activation_status", "success")
                     .toUriString();
@@ -61,31 +61,31 @@ public class AuthController {
 
     @GetMapping(value = AuthRoutes.REFRESH_OTP, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<Void>> refreshOtp(@RequestParam String username) {
-        accountService.refreshOtp(username);
+        accountServiceImpl.refreshOtp(username);
         return ResponseFactory.success(null, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
     @PostMapping(value = AuthRoutes.LOGIN, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<String>> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
-        LoginResponse result = accountService.validateUser(loginRequest, request, response);
+        LoginResponse result = accountServiceImpl.loginUser(loginRequest, request, response);
         return ResponseFactory.success(result.getUsername(), EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
     @PostMapping(value = AuthRoutes.LOGOUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<Void>> logout(@CookieValue(name = "refresh_token") String refreshToken) {
-        accountService.logout(refreshToken);
+        accountServiceImpl.logout(refreshToken);
         return ResponseFactory.success(null, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
     @PostMapping(value = AuthRoutes.REFRESH_TOKEN, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<String>> refresh(@CookieValue(name = "refresh_token") String refreshToken, HttpServletResponse response) {
-        LoginResponse result = accountService.refreshToken(refreshToken, response);
+        LoginResponse result = accountServiceImpl.refreshToken(refreshToken, response);
         return ResponseFactory.success(result.getUsername(), EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
     @GetMapping(value = AuthRoutes.REGISTRATION_STATUS, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseResponse<String>> getRegistrationStatus(@RequestParam String email) {
-        String status = accountService.getAccountStatusByEmail(email);
+        String status = accountServiceImpl.getAccountStatusByEmail(email);
         return ResponseFactory.success(status, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 }
