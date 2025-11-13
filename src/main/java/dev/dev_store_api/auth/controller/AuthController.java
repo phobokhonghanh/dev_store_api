@@ -66,9 +66,9 @@ public class AuthController {
     }
 
     @PostMapping(value = AuthRoutes.LOGIN, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseResponse<String>> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<BaseResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
         LoginResponse result = accountServiceImpl.loginUser(loginRequest, request, response);
-        return ResponseFactory.success(result.getUsername(), EMessage.SUCCESS.getMessage(), HttpStatus.OK);
+        return ResponseFactory.success(result, EMessage.SUCCESS.getMessage(), HttpStatus.OK);
     }
 
     @PostMapping(value = AuthRoutes.LOGOUT, produces = MediaType.APPLICATION_JSON_VALUE)
