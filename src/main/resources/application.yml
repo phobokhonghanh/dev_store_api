@@ -9,6 +9,7 @@ app:
   cors:
     allowed-origin-patterns:
       - ${DOMAIN_CLIENT}
+      - ${DOMAIN_CLIENT_SSL}
     allowed-methods:
       - GET
       - POST
