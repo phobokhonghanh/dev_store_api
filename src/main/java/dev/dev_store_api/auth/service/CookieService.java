@@ -9,8 +9,8 @@ public class CookieService {
     public ResponseCookie createCookie(String name, String value, long maxAge) {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .secure(false) // should be true in production
-//                .sameSite("None") // required for cross-site requests
+                .secure(true) // should be true in production
+                .sameSite("None") // required for cross-site requests
                 .path("/")
                 .maxAge(maxAge)
                 .build();
@@ -19,8 +19,8 @@ public class CookieService {
     public ResponseCookie deleteCookie(String name) {
         return ResponseCookie.from(name, "")
                 .httpOnly(true)
-                .secure(false) // should be true in production
-//                .sameSite("None") // required for cross-site requests
+                .secure(true) // should be true in production
+                .sameSite("None") // required for cross-site requests
                 .path("/")
                 .maxAge(0)
                 .build();
