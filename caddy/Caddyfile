@@ -1,0 +1,17 @@
+{
+    admin 127.0.0.1:2020
+}
+
+# FE
+#  {
+#     reverse_proxy http://:
+#     tls internal
+#     encode gzip
+# }
+
+# BE
+be.local.test {
+    reverse_proxy http://100.89.19.53:8080
+    tls internal
+    encode gzip
+}
